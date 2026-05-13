@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Apple } from "lucide-react"
+import { toast, Toaster } from "sonner"
 import { UpworkLogo } from "@/components/upwork-logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
@@ -38,21 +41,98 @@ const GoogleIcon = () => (
   </svg>
 )
 
-export default function SignupFormPage() {
+export default function FreelancerSignupPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setErrorMsg(null)
+
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
+    if (!fullName) {
+      setErrorMsg("Please enter your first and last name.")
+      return
+    }
+
     setSubmitting(true)
-    setTimeout(() => {
-      router.push("/find-work")
-    }, 600)
+    try {
+      let supabase
+      try {
+        supabase = createSupabaseBrowserClient()
+      } catch {
+        setErrorMsg("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.")
+        return
+      }
+
+      const origin = typeof window !== "undefined" ? window.location.origin : ""
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: origin ? `${origin}/onboarding` : undefined,
+          data: {
+            full_name: fullName,
+            signup_as: "freelancer",
+          },
+        },
+      })
+
+      if (error) {
+        setErrorMsg(error.message)
+        toast.error(error.message)
+        return
+      }
+
+      const user = data.user
+      const session = data.session
+
+      if (user) {
+        const { error: profileErr } = await supabase.from("profiles").upsert(
+          {
+            id: user.id,
+            full_name: fullName,
+            role: "freelancer",
+            onboarding_completed: false,
+          },
+          { onConflict: "id" },
+        )
+        if (profileErr) {
+          console.error(profileErr)
+          toast.error(
+            profileErr.message ||
+              "Account was created but the profile row could not be saved. Run the profiles trigger migration or check RLS.",
+          )
+        }
+      }
+
+      if (!session) {
+        toast.info("Check your email to confirm your account, then sign in to continue onboarding.")
+        router.push("/login?next=/onboarding&registered=1")
+        return
+      }
+
+      toast.success("Welcome! Let’s set up your profile.")
+      router.refresh()
+      router.push("/onboarding")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong."
+      setErrorMsg(msg)
+      toast.error(msg)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
+      <Toaster position="top-right" richColors />
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 md:px-8">
           <UpworkLogo />
@@ -70,12 +150,25 @@ export default function SignupFormPage() {
           Sign up to find work you love
         </h1>
 
+        {errorMsg ? (
+          <Alert variant="destructive" className="mt-8">
+            <AlertTitle>Could not create account</AlertTitle>
+            <AlertDescription>{errorMsg}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <div className="mt-10 grid gap-3 sm:grid-cols-2">
-          <button className="flex h-12 items-center justify-center gap-2 rounded-full border border-foreground bg-background px-4 text-sm font-medium hover:bg-muted">
+          <button
+            type="button"
+            className="flex h-12 items-center justify-center gap-2 rounded-full border border-foreground bg-background px-4 text-sm font-medium hover:bg-muted"
+          >
             <Apple className="size-5 fill-current" />
             Continue with Apple
           </button>
-          <button className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765c8]">
+          <button
+            type="button"
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765c8]"
+          >
             <GoogleIcon />
             Continue with Google
           </button>
@@ -91,17 +184,39 @@ export default function SignupFormPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="firstName">First name</Label>
-              <Input id="firstName" required className="h-12 rounded-md" />
+              <Input
+                id="firstName"
+                required
+                className="h-12 rounded-md"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                autoComplete="given-name"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="lastName">Last name</Label>
-              <Input id="lastName" required className="h-12 rounded-md" />
+              <Input
+                id="lastName"
+                required
+                className="h-12 rounded-md"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                autoComplete="family-name"
+              />
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required className="h-12 rounded-md" />
+            <Input
+              id="email"
+              type="email"
+              required
+              className="h-12 rounded-md"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -114,6 +229,9 @@ export default function SignupFormPage() {
                 minLength={8}
                 placeholder="Password (8 or more characters)"
                 className="h-12 rounded-md pr-12"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
               />
               <button
                 type="button"

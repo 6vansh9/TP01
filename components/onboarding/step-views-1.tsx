@@ -1,0 +1,274 @@
+"use client"
+
+import {
+  Briefcase,
+  GraduationCap,
+  Linkedin,
+  Rocket,
+  Sparkles,
+  Target,
+  Upload,
+  UserPen,
+  Wrench,
+} from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+import { MOTIVATION_QUOTE } from "@/lib/onboarding/constants"
+import type {
+  ExperienceLevel,
+  FreelancerGoalId,
+  FreelancerOnboardingForm,
+  ProfileSetupMethod,
+  WorkPreferenceId,
+} from "@/lib/onboarding/types"
+import { GOAL_LABELS } from "@/lib/onboarding/types"
+
+const TP = "#2563EB"
+
+type SetForm = React.Dispatch<React.SetStateAction<FreelancerOnboardingForm>>
+
+export function StepExperienceLevel({
+  form,
+  setForm,
+}: {
+  form: FreelancerOnboardingForm
+  setForm: SetForm
+}) {
+  const options: { id: ExperienceLevel; title: string; subtitle: string; icon: typeof Sparkles }[] = [
+    {
+      id: "new",
+      title: "I am brand new to this",
+      subtitle: "I am looking for my first freelance projects and want to build my reputation.",
+      icon: Sparkles,
+    },
+    {
+      id: "some",
+      title: "I have some experience",
+      subtitle: "I have completed a few projects and want to grow my client base.",
+      icon: Wrench,
+    },
+    {
+      id: "expert",
+      title: "I am an expert",
+      subtitle: "I have deep experience and want premium clients and challenging work.",
+      icon: Rocket,
+    },
+  ]
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <h1 className="text-balance text-center font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+        How would you describe your freelance experience?
+      </h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground md:text-base">
+        This helps us personalize job recommendations. You can update it later.
+      </p>
+      <div className="mt-10 flex flex-col gap-4">
+        {options.map((opt) => {
+          const selected = form.experienceLevel === opt.id
+          const Icon = opt.icon
+          return (
+            <button
+              key={opt.id!}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, experienceLevel: opt.id }))}
+              className={cn(
+                "flex w-full gap-5 rounded-2xl border-2 bg-card p-6 text-left shadow-sm transition-all hover:shadow-md md:gap-6 md:p-8",
+                selected ? "ring-2 ring-offset-2 ring-offset-background" : "border-border hover:border-muted-foreground/30",
+              )}
+              style={selected ? { borderColor: TP, ringColor: TP } : undefined}
+            >
+              <div
+                className="flex size-16 shrink-0 items-center justify-center rounded-2xl md:size-20"
+                style={{
+                  background: `linear-gradient(135deg, ${TP}22, ${TP}08)`,
+                  color: TP,
+                }}
+              >
+                <Icon className="size-8 md:size-10" strokeWidth={1.25} />
+              </div>
+              <div>
+                <p className="font-display text-lg font-semibold md:text-xl">{opt.title}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base">{opt.subtitle}</p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const GOAL_ICONS: Record<FreelancerGoalId, typeof Target> = {
+  main_income: Briefcase,
+  side_income: Sparkles,
+  experience_ft: GraduationCap,
+  no_goal: Target,
+}
+
+export function StepGoals({ form, setForm }: { form: FreelancerOnboardingForm; setForm: SetForm }) {
+  const ids = Object.keys(GOAL_LABELS) as FreelancerGoalId[]
+
+  function toggle(id: FreelancerGoalId) {
+    setForm((f) => {
+      const has = f.goals.includes(id)
+      const goals = has ? f.goals.filter((g) => g !== id) : [...f.goals, id]
+      return { ...f, goals }
+    })
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <h1 className="text-balance text-center font-display text-2xl font-semibold tracking-tight md:text-3xl">
+        What is your main goal on TaskPay?
+      </h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">Select all that apply.</p>
+      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        {ids.map((id) => {
+          const selected = form.goals.includes(id)
+          const Icon = GOAL_ICONS[id]
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => toggle(id)}
+              className={cn(
+                "flex min-h-[140px] flex-col gap-4 rounded-2xl border-2 bg-card p-6 text-left shadow-sm transition-all hover:shadow-md",
+                selected ? "ring-2 ring-offset-2 ring-offset-background" : "border-border hover:border-muted-foreground/30",
+              )}
+              style={selected ? { borderColor: TP, ringColor: TP } : undefined}
+            >
+              <div
+                className="flex size-14 items-center justify-center rounded-xl"
+                style={{ background: `linear-gradient(135deg, ${TP}22, ${TP}08)`, color: TP }}
+              >
+                <Icon className="size-7" strokeWidth={1.25} />
+              </div>
+              <p className="font-medium leading-snug">{GOAL_LABELS[id]}</p>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export function StepWorkPreference({ form, setForm }: { form: FreelancerOnboardingForm; setForm: SetForm }) {
+  const opts: { id: WorkPreferenceId; title: string; subtitle: string; icon: typeof Briefcase }[] = [
+    {
+      id: "find_self",
+      title: "I'd like to find opportunities myself",
+      subtitle: "Browse jobs, send proposals, and negotiate with clients.",
+      icon: Briefcase,
+    },
+    {
+      id: "package_work",
+      title: "I'd like to package up my work for clients to buy",
+      subtitle: "Productized services and repeatable offers (coming soon).",
+      icon: Target,
+    },
+  ]
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <h1 className="text-balance text-center font-display text-2xl font-semibold tracking-tight md:text-3xl">
+        How do you prefer to work?
+      </h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">Choose the option that fits you best today.</p>
+      <div className="mt-10 flex flex-col gap-4">
+        {opts.map((opt) => {
+          const selected = form.workPreference === opt.id
+          const Icon = opt.icon
+          return (
+            <button
+              key={opt.id!}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, workPreference: opt.id }))}
+              className={cn(
+                "flex w-full gap-5 rounded-2xl border-2 bg-card p-6 text-left shadow-sm transition-all md:gap-6 md:p-8",
+                selected ? "ring-2 ring-offset-2 ring-offset-background" : "border-border hover:border-muted-foreground/30",
+              )}
+              style={selected ? { borderColor: TP, ringColor: TP } : undefined}
+            >
+              <div
+                className="flex size-16 shrink-0 items-center justify-center rounded-2xl md:size-20"
+                style={{ background: `linear-gradient(135deg, ${TP}22, ${TP}08)`, color: TP }}
+              >
+                <Icon className="size-8 md:size-10" strokeWidth={1.25} />
+              </div>
+              <div>
+                <p className="font-display text-lg font-semibold md:text-xl">{opt.title}</p>
+                <p className="mt-2 text-sm text-muted-foreground md:text-base">{opt.subtitle}</p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      <div className="mx-auto mt-8 flex max-w-xl items-start gap-3 rounded-xl border border-border bg-muted/30 p-4">
+        <Checkbox
+          id="cth"
+          checked={form.openToContractToHire}
+          onCheckedChange={(v) => setForm((f) => ({ ...f, openToContractToHire: v === true }))}
+        />
+        <Label htmlFor="cth" className="cursor-pointer text-sm leading-relaxed font-normal">
+          I&apos;m open to contract-to-hire opportunities
+        </Label>
+      </div>
+    </div>
+  )
+}
+
+export function StepProfileMethod({ form, setForm }: { form: FreelancerOnboardingForm; setForm: SetForm }) {
+  const methods: { id: ProfileSetupMethod; label: string; icon: typeof Linkedin }[] = [
+    { id: "linkedin", label: "Import from LinkedIn", icon: Linkedin },
+    { id: "resume", label: "Upload your resume", icon: Upload },
+    { id: "manual", label: "Fill out manually (15 min)", icon: UserPen },
+  ]
+
+  return (
+    <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_320px]">
+      <div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">How would you like to build your profile?</h1>
+        <p className="mt-2 text-sm text-muted-foreground md:text-base">
+          You can always edit your profile later. LinkedIn import and resume parsing are coming soon — for now they
+          record your preference.
+        </p>
+        <div className="mt-8 flex flex-col gap-3">
+          {methods.map((m) => {
+            const selected = form.profileSetupMethod === m.id
+            const Icon = m.icon
+            return (
+              <button
+                key={m.id!}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, profileSetupMethod: m.id }))}
+                className={cn(
+                  "flex items-center gap-4 rounded-xl border-2 px-5 py-4 text-left font-medium transition-all",
+                  selected ? "bg-muted/40" : "border-border bg-card hover:bg-muted/30",
+                )}
+                style={
+                  selected
+                    ? { borderColor: TP, color: TP }
+                    : { borderColor: "var(--border)" }
+                }
+              >
+                <Icon className="size-5 shrink-0" />
+                {m.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <aside className="rounded-2xl border border-border bg-gradient-to-br from-[#2563EB]/10 to-transparent p-6 shadow-sm">
+        <p className="text-sm font-medium uppercase tracking-wider" style={{ color: TP }}>
+          Keep going
+        </p>
+        <blockquote className="mt-4 font-display text-xl font-medium leading-snug text-foreground">
+          &ldquo;{MOTIVATION_QUOTE.text}&rdquo;
+        </blockquote>
+        <p className="mt-4 text-sm text-muted-foreground">— {MOTIVATION_QUOTE.author}</p>
+      </aside>
+    </div>
+  )
+}
