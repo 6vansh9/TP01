@@ -16,9 +16,9 @@ const bricolage = Bricolage_Grotesque({
 })
 
 export const metadata: Metadata = {
-  title: "Upwork — The world's work marketplace",
+  title: "TaskPay — Find Freelance Jobs",
   description:
-    "Connect with talent. Get work done. The freelance platform designed for the highly-skilled, highly-ambitious, and AI-fluent.",
+    "Discover thousands of freelance opportunities. Connect with clients, showcase your skills, and grow your freelance career on TaskPay.",
   generator: "v0.app",
 }
 
