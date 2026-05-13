@@ -51,6 +51,8 @@ export type FreelancerOnboardingForm = {
   workExperience: WorkExperienceEntry[]
   education: EducationEntry[]
   languages: LanguageRow[]
+  title: string
+  skills: string[]
   bio: string
   hourlyRate: string
   avatarFile: File | null
@@ -74,3 +76,11 @@ export const PROFICIENCY_OPTIONS = [
   { value: "fluent", label: "Fluent — I can discuss complex topics and read professional material" },
   { value: "native", label: "Native or bilingual — I have complete command of this language" },
 ] as const
+
+export const SUGGESTED_SKILLS = [
+  "JavaScript", "TypeScript", "React.js", "Next.js", "Node.js",
+  "Python", "Tailwind CSS", "PostgreSQL", "REST APIs", "GraphQL",
+  "Vue.js", "Angular", "Django", "FastAPI", "Docker", "AWS",
+  "UI/UX Design", "Figma", "Mobile Development", "React Native",
+  "Machine Learning", "Data Analysis", "PHP", "Laravel", "WordPress",
+]

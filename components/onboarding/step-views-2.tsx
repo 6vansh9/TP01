@@ -30,8 +30,10 @@ import type {
   EducationEntry,
   FreelancerOnboardingForm,
   WorkExperienceEntry,
+  SUGGESTED_SKILLS,
 } from "@/lib/onboarding/types"
-import { GOAL_LABELS, PROFICIENCY_OPTIONS } from "@/lib/onboarding/types"
+import { GOAL_LABELS, PROFICIENCY_OPTIONS   SUGGESTED_SKILLS,
+} from "@/lib/onboarding/types"
 import {
   experienceLevelLabel,
   profileMethodLabel,
@@ -746,6 +748,114 @@ export function StepReviewSummary({
         </dl>
       </div>
       <ProfilePreviewCard preview={preview} form={form} step={11} />
+    </div>
+  )
+}
+
+export function StepTitleSkills({ form, setForm }: { form: FreelancerOnboardingForm; setForm: SetForm }) {
+  const [input, setInput] = useState("")
+
+  function addSkill(skill: string) {
+    const trimmed = skill.trim()
+    if (!trimmed || form.skills.includes(trimmed)) return
+    setForm((f) => ({ ...f, skills: [...f.skills, trimmed] }))
+    setInput("")
+  }
+
+  function removeSkill(skill: string) {
+    setForm((f) => ({ ...f, skills: f.skills.filter((s) => s !== skill) }))
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault()
+      addSkill(input)
+    }
+  }
+
+  const suggestions = SUGGESTED_SKILLS.filter(
+    (s) => !form.skills.includes(s) && s.toLowerCase().includes(input.toLowerCase())
+  ).slice(0, 8)
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <h1 className="text-center font-display text-2xl font-semibold md:text-3xl">
+        Add your title & skills
+      </h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
+        Your title is the first thing clients see. Skills help you get found.
+      </p>
+
+      <div className="mt-10 space-y-6">
+        <div className="grid gap-2">
+          <Label>Professional title</Label>
+          <Input
+            placeholder="e.g. Full-Stack Developer | React & Node.js"
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            className="h-12"
+          />
+          <p className="text-xs text-muted-foreground">Keep it specific — "React Developer" beats "Software Engineer"</p>
+        </div>
+
+        <div className="grid gap-2">
+          <Label>Skills</Label>
+          <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-muted/30 p-3 min-h-[48px]">
+            {form.skills.map((skill) => (
+              <span
+                key={skill}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+              >
+                {skill}
+                <button
+                  type="button"
+                  onClick={() => removeSkill(skill)}
+                  className="ml-1 text-primary/60 hover:text-primary"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {form.skills.length === 0 && (
+              <span className="text-sm text-muted-foreground">Add at least 3 skills…</span>
+            )}
+          </div>
+          <Input
+            placeholder="Type a skill and press Enter"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="h-12"
+          />
+          {input && suggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => addSkill(s)}
+                  className="rounded-full border border-border bg-background px-3 py-1 text-sm hover:bg-muted"
+                >
+                  + {s}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <p className="w-full text-xs text-muted-foreground">Suggestions:</p>
+            {SUGGESTED_SKILLS.filter((s) => !form.skills.includes(s)).slice(0, 10).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => addSkill(s)}
+                className="rounded-full border border-border bg-background px-3 py-1 text-sm hover:bg-muted"
+              >
+                + {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

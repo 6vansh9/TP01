@@ -27,15 +27,17 @@ import {
   StepLanguages,
   StepPhotoLocation,
   StepReviewSummary,
+  StepTitleSkills,
   StepWorkExperience,
   type ProfilePreviewSeed,
 } from "@/components/onboarding/step-views-2"
 
 const TP = "#2563EB"
+const TOTAL_STEPS = 11
 
 function stepTitle(step: number): string {
-  if (step === 11) return "Review"
-  return `Step ${step} of 10`
+  if (step === TOTAL_STEPS + 1) return "Review"
+  return `Step ${step} of ${TOTAL_STEPS}`
 }
 
 export function FreelancerOnboardingClient({ preview }: { preview: ProfilePreviewSeed }) {
@@ -45,7 +47,7 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
   const [form, setForm] = useState<FreelancerOnboardingForm>(createInitialOnboardingForm)
   const [submitting, setSubmitting] = useState(false)
 
-  const progressPct = step >= 11 ? 100 : (step / 10) * 100
+  const progressPct = step >= TOTAL_STEPS + 1 ? 100 : (step / TOTAL_STEPS) * 100
 
   const goForward = useCallback(() => {
     if (!canAdvanceFromStep(step, form)) {
@@ -53,7 +55,7 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
       return
     }
     setDir(1)
-    setStep((s) => Math.min(11, s + 1))
+    setStep((s) => Math.min(TOTAL_STEPS + 1, s + 1))
   }, [step, form])
 
   const goBack = useCallback(() => {
@@ -63,16 +65,10 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
 
   const skipStep = useCallback(() => {
     setDir(1)
-    setStep((s) => Math.min(11, s + 1))
+    setStep((s) => Math.min(TOTAL_STEPS + 1, s + 1))
   }, [])
 
   async function handlePublish() {
-    for (let s = 1; s <= 10; s++) {
-      if (!canAdvanceFromStep(s, form)) {
-        toast.error(`Please complete step ${s} before publishing.`)
-        return
-      }
-    }
     setSubmitting(true)
     try {
       let supabase
@@ -82,10 +78,7 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
         toast.error("Missing Supabase environment variables.")
         return
       }
-      const {
-        data: { user },
-        error: userErr,
-      } = await supabase.auth.getUser()
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
       if (userErr || !user) {
         toast.error("You need to be signed in to publish your profile.")
         router.push("/login?next=/onboarding")
@@ -93,7 +86,7 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
       }
       const { error } = await submitFreelancerOnboarding(supabase, user.id, form)
       if (error) {
-        toast.error(error.message || "Could not save profile. Check Supabase columns and RLS.")
+        toast.error(error.message || "Could not save profile.")
         return
       }
       toast.success("Profile published!")
@@ -106,49 +99,36 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
 
   function renderStep() {
     switch (step) {
-      case 1:
-        return <StepExperienceLevel form={form} setForm={setForm} />
-      case 2:
-        return <StepGoals form={form} setForm={setForm} />
-      case 3:
-        return <StepWorkPreference form={form} setForm={setForm} />
-      case 4:
-        return <StepProfileMethod form={form} setForm={setForm} />
-      case 5:
-        return <StepWorkExperience form={form} setForm={setForm} />
-      case 6:
-        return <StepEducation form={form} setForm={setForm} />
-      case 7:
-        return <StepLanguages form={form} setForm={setForm} />
-      case 8:
-        return <StepBioOverview form={form} setForm={setForm} preview={preview} step={step} />
-      case 9:
-        return <StepHourlyRate form={form} setForm={setForm} />
-      case 10:
-        return <StepPhotoLocation form={form} setForm={setForm} />
-      case 11:
-        return <StepReviewSummary form={form} preview={preview} />
-      default:
-        return null
+      case 1: return <StepExperienceLevel form={form} setForm={setForm} />
+      case 2: return <StepGoals form={form} setForm={setForm} />
+      case 3: return <StepWorkPreference form={form} setForm={setForm} />
+      case 4: return <StepProfileMethod form={form} setForm={setForm} />
+      case 5: return <StepWorkExperience form={form} setForm={setForm} />
+      case 6: return <StepEducation form={form} setForm={setForm} />
+      case 7: return <StepLanguages form={form} setForm={setForm} />
+      case 8: return <StepTitleSkills form={form} setForm={setForm} />
+      case 9: return <StepBioOverview form={form} setForm={setForm} preview={preview} step={step} />
+      case 10: return <StepHourlyRate form={form} setForm={setForm} />
+      case 11: return <StepPhotoLocation form={form} setForm={setForm} />
+      case 12: return <StepReviewSummary form={form} preview={preview} />
+      default: return null
     }
   }
 
   function primaryLabel(): string {
     if (step === 5) return "Next, add your education"
-    if (step === 6) return "Next, add skills"
-    if (step === 7) return "Next, write an overview"
-    if (step === 8) return "Next, set your rate"
-    if (step === 9) return "Next, add your photo and location"
-    if (step === 10) return "Review your profile"
-    if (step === 11) return "Submit & Publish Profile"
+    if (step === 6) return "Next, add languages"
+    if (step === 7) return "Next, add title & skills"
+    if (step === 8) return "Next, write an overview"
+    if (step === 9) return "Next, set your rate"
+    if (step === 10) return "Next, add your photo and location"
+    if (step === 11) return "Review your profile"
+    if (step === 12) return "Submit & Publish Profile"
     return "Continue"
   }
 
   function onPrimary() {
-    if (step === 11) {
-      void handlePublish()
-      return
-    }
+    if (step === 12) { void handlePublish(); return }
     goForward()
   }
 
@@ -166,7 +146,7 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
           <div className="flex items-center gap-3">
             <Progress value={progressPct} className="h-2 flex-1 bg-[#2563EB]/15 [&>[data-slot=progress-indicator]]:bg-[#2563EB]" />
             <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-              {Math.min(step, 10)}/10
+              {Math.min(step, TOTAL_STEPS)}/{TOTAL_STEPS}
             </span>
           </div>
         </div>
@@ -181,7 +161,6 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
             </Button>
           )}
         </div>
-
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={step}

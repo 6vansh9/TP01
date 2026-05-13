@@ -40,6 +40,8 @@ export async function submitFreelancerOnboarding(
     const { error } = await supabase
       .from("profiles")
       .update({
+        title: form.title.trim() || null,
+        skills: form.skills.length > 0 ? form.skills : null,
         experience_level: experienceLevelForDb(form.experienceLevel),
         goals: form.goals,
         work_preference: form.workPreference,
