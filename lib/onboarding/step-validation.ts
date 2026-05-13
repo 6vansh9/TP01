@@ -1,5 +1,4 @@
 import type { FreelancerOnboardingForm } from "./types"
-
 export function canAdvanceFromStep(step: number, form: FreelancerOnboardingForm): boolean {
   switch (step) {
     case 1:
@@ -16,12 +15,14 @@ export function canAdvanceFromStep(step: number, form: FreelancerOnboardingForm)
     case 7:
       return form.languages.every((l) => l.name.trim() && l.proficiency)
     case 8:
+      return form.title.trim().length > 0 && form.skills.length >= 1
+    case 9:
       return form.bio.trim().length >= 100
-    case 9: {
+    case 10: {
       const n = Number.parseFloat(form.hourlyRate)
       return Number.isFinite(n) && n > 0
     }
-    case 10:
+    case 11:
       return (
         !!form.avatarFile &&
         !!form.dob &&

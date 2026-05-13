@@ -32,7 +32,7 @@ import type {
   WorkExperienceEntry,
   SUGGESTED_SKILLS,
 } from "@/lib/onboarding/types"
-import { GOAL_LABELS, PROFICIENCY_OPTIONS   SUGGESTED_SKILLS,
+import { GOAL_LABELS, PROFICIENCY_OPTIONS, SUGGESTED_SKILLS,
 } from "@/lib/onboarding/types"
 import {
   experienceLevelLabel,
@@ -723,7 +723,7 @@ export function StepReviewSummary({
           </div>
           <div className="border-b border-border pb-3">
             <dt className="text-muted-foreground">Overview</dt>
-            <dd className="mt-2 whitespace-pre-wrap text-foreground/90">{form.bio}</dd>
+            <dd className="mt-2 whitespace-pre-wrap break-words text-foreground/90">{form.bio}</dd>
           </div>
           <div className="flex justify-between gap-4 border-b border-border pb-3">
             <dt className="text-muted-foreground">Hourly rate</dt>
