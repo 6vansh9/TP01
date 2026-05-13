@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { User, Apple } from "lucide-react"
+import { User, Apple, Lock } from "lucide-react"
 import { UpworkLogo } from "@/components/upwork-logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/lib/auth-context"
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
@@ -31,12 +32,25 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
-    setTimeout(() => router.push("/find-work"), 500)
+    setError("")
+    
+    try {
+      await login(email, password)
+      router.push("/jobs")
+    } catch {
+      setError("Invalid email or password")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -50,15 +64,35 @@ export default function LoginPage() {
       <main className="mx-auto flex max-w-[560px] flex-col px-4 py-16 md:py-24">
         <div className="rounded-2xl border border-border bg-background p-8 md:p-12">
           <h1 className="text-center font-display text-3xl font-medium tracking-tight md:text-4xl">
-            Log in to Upwork
+            Log in to TaskPay
           </h1>
+
+          {error && (
+            <div className="mt-4 rounded-md bg-destructive/10 p-3 text-center text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-4">
             <div className="relative">
               <User className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 required
-                placeholder="Username or Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                className="h-14 rounded-md pl-12 text-base"
+              />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                required
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
                 className="h-14 rounded-md pl-12 text-base"
               />
             </div>
@@ -67,7 +101,7 @@ export default function LoginPage() {
               disabled={submitting}
               className="h-14 w-full rounded-md bg-primary text-base font-medium"
             >
-              {submitting ? "Loading..." : "Continue"}
+              {submitting ? "Logging in..." : "Log in"}
             </Button>
           </form>
 
@@ -90,7 +124,7 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border border-border bg-background p-6 text-center">
-          <p className="text-sm text-muted-foreground">Don&apos;t have an Upwork account?</p>
+          <p className="text-sm text-muted-foreground">Don&apos;t have a TaskPay account?</p>
           <Button asChild variant="outline" className="rounded-full border-primary text-primary hover:bg-primary/5">
             <Link href="/signup">Sign Up</Link>
           </Button>

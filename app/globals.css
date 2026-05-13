@@ -150,4 +150,18 @@
       transform: translateX(-50%);
     }
   }
+  
+  .skill-match-glow {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes glow-pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
+    }
+    50% {
+      filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.6));
+    }
+  }
 }
