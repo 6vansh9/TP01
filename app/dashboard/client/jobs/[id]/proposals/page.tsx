@@ -104,13 +104,14 @@ export default function JobProposalsPage() {
     if (status === "accepted") {
       await supabase.from("jobs").update({ status: "in_progress" }).eq("id", jobId)
       // Auto-create conversation
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from("conversations").upsert({
+      const { data: jobRow } = await supabase.from("jobs").select("client_id").eq("id", jobId).single()
+      if (jobRow) {
+        const { error: convErr } = await supabase.from("conversations").upsert({
           job_id: jobId,
-          client_id: user.id,
+          client_id: jobRow.client_id,
           freelancer_id: proposal.freelancer_id,
         }, { onConflict: "job_id,freelancer_id" })
+        console.log("conv upsert error:", convErr)
       }
     }
 
