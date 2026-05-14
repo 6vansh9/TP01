@@ -124,7 +124,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col items-stretch gap-3 md:items-end">
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="rounded-full border-primary text-primary hover:bg-primary/5">See public view</Button>
+                <a href={`/profile/${profile?.id}`} target="_blank"><Button variant="outline" className="rounded-full border-primary text-primary hover:bg-primary/5">See public view</Button></a>
                 <Button className="rounded-full">Profile settings</Button>
               </div>
               <button className="inline-flex items-center justify-center gap-2 text-sm font-medium text-foreground/80 hover:text-foreground md:self-end">

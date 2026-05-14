@@ -31,6 +31,8 @@ const reachMoreMenu = [
 export function AppNav() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [initials, setInitials] = useState("?")
+  const [fullName, setFullName] = useState("")
+  const [userId, setUserId] = useState<string | null>(null)
   const [role, setRole] = useState<"client" | "freelancer" | null>(null)
 
   useEffect(() => {
@@ -41,9 +43,13 @@ export function AppNav() {
       )
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      setUserId(user.id)
       const { data } = await supabase.from("profiles").select("avatar_url, full_name, role").eq("id", user.id).single()
       if (data?.avatar_url) setAvatarUrl(data.avatar_url)
-      if (data?.full_name) setInitials(data.full_name[0]?.toUpperCase() ?? "?")
+      if (data?.full_name) {
+        setFullName(data.full_name)
+        setInitials(data.full_name[0]?.toUpperCase() ?? "?")
+      }
       if (data?.role) setRole(data.role as "client" | "freelancer")
     }
     load()
@@ -192,16 +198,34 @@ export function AppNav() {
 
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-64">
+              <div className="px-3 py-3 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 overflow-hidden rounded-full shrink-0">
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="Profile" className="size-full object-cover" />
+                      : <span className="flex size-full items-center justify-center bg-primary/10 text-sm font-semibold text-primary">{initials}</span>}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">{fullName || "User"}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${role === "client" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
+                      {role === "client" ? "Client" : "Freelancer"}
+                    </span>
+                  </div>
+                </div>
+              </div>
               <DropdownMenuItem asChild>
                 <Link href="/profile">Your profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/profile">Settings</Link>
+                <Link href={role === "client" ? "/dashboard/client" : "/dashboard/freelancer"}>Dashboard</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={userId ? `/profile/${userId}` : "/profile"} target="_blank">Public profile</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/">Log out</Link>
+                <Link href="/auth/sign-out" className="text-destructive focus:text-destructive">Log out</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
