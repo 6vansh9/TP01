@@ -18,6 +18,8 @@ type Profile = {
   review_count: number | null
   avatar_url: string | null
   experience_level: string | null
+  edu_verified: boolean | null
+  phone_verified: boolean | null
 }
 
 type Review = {
@@ -61,7 +63,7 @@ export default function ProfilePage() {
       )
       const { data } = await supabase
         .from("profiles")
-        .select("id, full_name, title, bio, hourly_rate, skills, location, rating, jobs_completed, review_count, avatar_url, experience_level")
+        .select("id, full_name, title, bio, hourly_rate, skills, location, rating, jobs_completed, review_count, avatar_url, experience_level, edu_verified, phone_verified")
         .eq("id", profileId)
         .single()
       setProfile(data)
@@ -134,7 +136,15 @@ export default function ProfilePage() {
               : (profile.full_name?.[0]?.toUpperCase() ?? "?")}
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">{profile.full_name ?? "User"}</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+              {profile.full_name ?? "User"}
+              {profile.edu_verified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">🎓 Student Verified</span>
+              )}
+              {profile.phone_verified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">✓ Phone Verified</span>
+              )}
+            </h1>
             <p className="text-muted-foreground mt-0.5">{profile.title ?? ""}</p>
             <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
               {profile.location && <span className="flex items-center gap-1"><MapPin className="size-3.5" />{profile.location}</span>}

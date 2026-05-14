@@ -1,4 +1,5 @@
 "use client"
+import { createBrowserClient } from "@supabase/ssr"
 
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
@@ -856,6 +857,296 @@ export function StepTitleSkills({ form, setForm }: { form: FreelancerOnboardingF
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Step: Phone Verification ───────────────────────────────────────────────
+export function StepPhoneVerification({
+  form, setForm,
+}: {
+  form: FreelancerOnboardingForm
+  setForm: React.Dispatch<React.SetStateAction<FreelancerOnboardingForm>>
+}) {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const existingPhone = `${form.phoneCountryCode}${form.phoneLocal}`.replace(/\s+/g, "")
+  const [phone, setPhone] = useState(form.phone || existingPhone || "")
+  const [otp, setOtp] = useState("")
+  const [sent, setSent] = useState(false)
+  const [verified, setVerified] = useState(form.phone_verified ?? false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const hasPhone = phone.length > 7
+
+  useEffect(() => {
+    if (hasPhone && !sent && !verified) {
+      // Auto-send OTP on mount if phone already known
+      const autoSend = async () => {
+        setLoading(true)
+        const { error } = await supabase.auth.signInWithOtp({ phone })
+        setLoading(false)
+        if (error) { setError(error.message); return }
+        setSent(true)
+      }
+      autoSend()
+    }
+  }, [])
+
+  // Auto-send OTP if phone already collected from step 11
+  useEffect(() => {
+    if (hasPhone && !sent && !verified) {
+      sendOtp()
+    }
+  }, [])
+
+  async function sendOtp() {
+    setError("")
+    if (!phone.match(/^\+[1-9]\d{7,14}$/)) {
+      setError("Enter a valid phone number with country code e.g. +91XXXXXXXXXX")
+      return
+    }
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithOtp({ phone })
+    setLoading(false)
+    if (error) { setError(error.message); return }
+    setSent(true)
+  }
+
+  async function verifyOtp() {
+    setError("")
+    setLoading(true)
+    const { error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" })
+    setLoading(false)
+    if (error) { setError(error.message); return }
+    setVerified(true)
+    setForm(f => ({ ...f, phone, phone_verified: true }))
+  }
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#2563EB]">Verification</p>
+      <h2 className="font-display text-3xl font-semibold tracking-tight">Verify your phone number</h2>
+      <p className="mt-3 text-muted-foreground">We'll send a one-time code to confirm your number.</p>
+
+      {verified ? (
+        <div className="mt-8 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
+          <div className="size-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">✓</div>
+          <div>
+            <p className="font-semibold text-green-800">Phone verified!</p>
+            <p className="text-sm text-green-600">{phone}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-8 space-y-4">
+          {!hasPhone && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Phone number</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="+91XXXXXXXXXX"
+                disabled={sent}
+                className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#2563EB] disabled:bg-muted"
+              />
+            </div>
+          )}
+          {hasPhone && !sent && (
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3">
+              <span className="text-sm font-medium">{phone}</span>
+              <button onClick={() => setPhone("")} className="ml-auto text-xs text-muted-foreground hover:underline">Change</button>
+            </div>
+          )}
+          {!sent ? (
+            <button
+              onClick={sendOtp}
+              disabled={loading}
+              className="rounded-full bg-[#2563EB] px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {loading ? "Sending..." : "Send OTP"}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Enter OTP</label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={e => setOtp(e.target.value)}
+                  placeholder="8-digit code"
+                  maxLength={8}
+                  className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#2563EB]"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={verifyOtp}
+                  disabled={loading || otp.length < 6}
+                  className="rounded-full bg-[#2563EB] px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {loading ? "Verifying..." : "Verify"}
+                </button>
+                <button onClick={() => { setSent(false); setOtp("") }} className="text-sm text-muted-foreground hover:underline">
+                  Change number
+                </button>
+              </div>
+            </div>
+          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Step: .edu Verification ─────────────────────────────────────────────────
+export function StepEduVerification({
+  form, setForm,
+}: {
+  form: FreelancerOnboardingForm
+  setForm: React.Dispatch<React.SetStateAction<FreelancerOnboardingForm>>
+}) {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const [eduEmail, setEduEmail] = useState(form.edu_email ?? "")
+  const [sent, setSent] = useState(false)
+  const [verified, setVerified] = useState(form.edu_verified ?? false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [polling, setPolling] = useState(false)
+
+  async function sendVerification() {
+    setError("")
+    if (!eduEmail.toLowerCase().endsWith(".edu")) {
+      setError("Only .edu email addresses are accepted.")
+      return
+    }
+    setLoading(true)
+    // Save edu_email to profile immediately
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from("profiles").update({ edu_email: eduEmail }).eq("id", user.id)
+    }
+    // Send OTP to edu email
+    const { error } = await supabase.auth.signInWithOtp({
+      email: eduEmail,
+      options: { 
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/onboarding`,
+      }
+    })
+    setLoading(false)
+    if (error) { setError(error.message); return }
+    setSent(true)
+    setForm(f => ({ ...f, edu_email: eduEmail }))
+    // Magic link flow — user clicks link in email, callback marks edu_verified
+  }
+
+  const [eduOtp, setEduOtp] = useState("")
+
+  async function verifyEduOtp() {
+    setError("")
+    setLoading(true)
+    const { error } = await supabase.auth.verifyOtp({
+      email: eduEmail,
+      token: eduOtp,
+      type: "email"
+    })
+    setLoading(false)
+    if (error) { setError(error.message); return }
+    // Mark edu_verified in profiles
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from("profiles").update({ edu_verified: true, edu_email: eduEmail }).eq("id", user.id)
+    }
+    setVerified(true)
+    setForm(f => ({ ...f, edu_email: eduEmail, edu_verified: true }))
+  }
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-[#2563EB]">Student Verification</p>
+      <h2 className="font-display text-3xl font-semibold tracking-tight">Verify your college email</h2>
+      <p className="mt-3 text-muted-foreground">
+        Use your college-issued <span className="font-semibold">.edu</span> email to earn a{" "}
+        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">🎓 Student Verified</span>{" "}
+        badge on your profile.
+      </p>
+
+      {verified ? (
+        <div className="mt-8 space-y-4">
+          <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div className="size-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">🎓</div>
+            <div>
+              <p className="font-semibold text-blue-800">Student Verified!</p>
+              <p className="text-sm text-blue-600">{eduEmail}</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">The 🎓 Student Verified badge will appear on your public profile and proposals.</p>
+        </div>
+      ) : (
+        <div className="mt-8 space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">College email address</label>
+            <input
+              type="email"
+              value={eduEmail}
+              onChange={e => setEduEmail(e.target.value)}
+              placeholder="you@university.edu"
+              disabled={sent}
+              className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#2563EB] disabled:bg-muted"
+            />
+          </div>
+          {!sent ? (
+            <button
+              onClick={sendVerification}
+              disabled={loading}
+              className="rounded-full bg-[#2563EB] px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {loading ? "Sending..." : "Send Verification Code"}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Your verification code was sent to <strong>{eduEmail}</strong>. Check your inbox.</p>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Enter code</label>
+                <input
+                  type="text"
+                  value={eduOtp}
+                  onChange={e => setEduOtp(e.target.value)}
+                  placeholder="6-digit code"
+                  maxLength={6}
+                  className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#2563EB]"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={verifyEduOtp}
+                  disabled={loading || eduOtp.length < 6}
+                  className="rounded-full bg-[#2563EB] px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {loading ? "Verifying..." : "Verify"}
+                </button>
+                <button onClick={() => { setSent(false); setEduOtp("") }} className="text-sm text-muted-foreground hover:underline">
+                  Change email
+                </button>
+              </div>
+            </div>
+          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <button
+            onClick={() => setForm(f => ({ ...f, edu_email: "", edu_verified: false }))}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            Skip — I don't have a .edu email
+          </button>
+        </div>
+      )}
     </div>
   )
 }

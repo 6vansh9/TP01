@@ -29,11 +29,13 @@ import {
   StepReviewSummary,
   StepTitleSkills,
   StepWorkExperience,
+  StepPhoneVerification,
+  StepEduVerification,
   type ProfilePreviewSeed,
 } from "@/components/onboarding/step-views-2"
 
 const TP = "#2563EB"
-const TOTAL_STEPS = 11
+const TOTAL_STEPS = 13
 
 function stepTitle(step: number): string {
   if (step === TOTAL_STEPS + 1) return "Review"
@@ -110,7 +112,9 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
       case 9: return <StepBioOverview form={form} setForm={setForm} preview={preview} step={step} />
       case 10: return <StepHourlyRate form={form} setForm={setForm} />
       case 11: return <StepPhotoLocation form={form} setForm={setForm} />
-      case 12: return <StepReviewSummary form={form} preview={preview} />
+      case 12: return <StepPhoneVerification form={form} setForm={setForm} />
+      case 13: return <StepEduVerification form={form} setForm={setForm} />
+      case 14: return <StepReviewSummary form={form} preview={preview} />
       default: return null
     }
   }
@@ -122,13 +126,15 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
     if (step === 8) return "Next, write an overview"
     if (step === 9) return "Next, set your rate"
     if (step === 10) return "Next, add your photo and location"
-    if (step === 11) return "Review your profile"
-    if (step === 12) return "Submit & Publish Profile"
+    if (step === 11) return "Next, verify your phone"
+    if (step === 12) return "Next, verify your college email"
+    if (step === 13) return "Review your profile"
+    if (step === 14) return "Submit & Publish Profile"
     return "Continue"
   }
 
   function onPrimary() {
-    if (step === 12) { void handlePublish(); return }
+    if (step === 14) { void handlePublish(); return }
     goForward()
   }
 
@@ -177,7 +183,7 @@ export function FreelancerOnboardingClient({ preview }: { preview: ProfilePrevie
 
       <footer className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 p-4 backdrop-blur md:px-8">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-end gap-3">
-          {(step === 5 || step === 6) && (
+          {(step === 5 || step === 6 || step === 12 || step === 13) && (
             <Button type="button" variant="ghost" className="mr-auto text-muted-foreground" onClick={skipStep}>
               Skip for now
             </Button>

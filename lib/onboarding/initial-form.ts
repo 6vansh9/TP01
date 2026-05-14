@@ -29,5 +29,9 @@ export function createInitialOnboardingForm(): FreelancerOnboardingForm {
     address: defaultAddress(),
     phoneLocal: "",
     phoneCountryCode: "+91",
+    phone: "",
+    phone_verified: false,
+    edu_email: "",
+    edu_verified: false,
   }
 }

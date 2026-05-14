@@ -61,6 +61,10 @@ export type FreelancerOnboardingForm = {
   address: AddressForm
   phoneLocal: string
   phoneCountryCode: string
+  phone: string
+  phone_verified: boolean
+  edu_email: string
+  edu_verified: boolean
 }
 
 export const GOAL_LABELS: Record<FreelancerGoalId, string> = {

@@ -37,9 +37,14 @@ export async function submitFreelancerOnboarding(
       .filter(Boolean)
       .join(", ")
 
+    // Get full_name from auth user metadata
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    const fullName = authUser?.user_metadata?.full_name ?? authUser?.email?.split("@")[0] ?? null
+
     const { error } = await supabase
       .from("profiles")
       .update({
+        full_name: fullName,
         title: form.title.trim() || null,
         skills: form.skills.length > 0 ? form.skills : null,
         experience_level: experienceLevelForDb(form.experienceLevel),
@@ -54,6 +59,9 @@ export async function submitFreelancerOnboarding(
         hourly_rate: rate,
         avatar_url: avatarUrl,
         phone,
+        edu_email: form.edu_email || null,
+        edu_verified: form.edu_verified ?? false,
+        phone_verified: form.phone_verified ?? false,
         dob: form.dob || null,
         address: form.address,
         location: locationLine || null,

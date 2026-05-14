@@ -150,7 +150,12 @@ export default function JobProposalsPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold">{p.freelancer_name}</p>
+                        <p className="font-semibold flex items-center gap-2 flex-wrap">
+                    {p.freelancer_name}
+                    {p.edu_verified && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">🎓 Student Verified</span>
+                    )}
+                  </p>
                         
                         <a
                           href={`/profile/${p.freelancer_id}`}
