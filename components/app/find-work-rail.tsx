@@ -1,12 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { ChevronDown, ChevronUp, Pencil, ExternalLink } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { createBrowserClient } from "@supabase/ssr"
 
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -14,26 +14,15 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
   )
 }
 
-function CollapsibleCard({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string
-  defaultOpen?: boolean
-  children: React.ReactNode
-}) {
+function CollapsibleCard({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children?: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Card>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-left"
-      >
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between text-left">
         <h3 className="text-base font-semibold">{title}</h3>
         {open ? <ChevronUp className="size-5" /> : <ChevronDown className="size-5" />}
       </button>
-      {open && <div className="mt-4">{children}</div>}
+      {open && children && <div className="mt-4">{children}</div>}
     </Card>
   )
 }
@@ -45,34 +34,64 @@ function RowEdit({ label, value }: { label: string; value: string }) {
         <p className="text-sm font-medium">{label}</p>
         <p className="mt-1 text-sm text-muted-foreground">{value}</p>
       </div>
-      <button
-        className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/40 text-primary hover:bg-primary/5"
-        aria-label={`Edit ${label}`}
-      >
+      <button className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/40 text-primary hover:bg-primary/5" aria-label={`Edit ${label}`}>
         <Pencil className="size-3.5" />
       </button>
     </div>
   )
 }
 
+interface Profile {
+  full_name: string | null
+  avatar_url: string | null
+  title: string | null
+}
+
 export function FindWorkRail() {
+  const [profile, setProfile] = useState<Profile | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, title")
+        .eq("id", user.id)
+        .single()
+      setProfile(data)
+    }
+    load()
+  }, [])
+
+  const displayName = profile?.full_name ?? "Your Name"
+  const firstName = displayName.split(" ")[0]
+  const lastInitial = displayName.split(" ")[1]?.[0] ?? ""
+  const shortName = lastInitial ? `${firstName} ${lastInitial}.` : firstName
+
   return (
     <aside className="flex flex-col gap-4">
       {/* Profile */}
       <Card>
         <div className="flex items-center gap-4">
-          <Image
-            src="/avatar-vansh.jpg"
-            alt="Vansh A."
-            width={56}
-            height={56}
-            className="size-14 rounded-full object-cover"
-          />
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt={shortName} className="size-14 rounded-full object-cover" />
+          ) : (
+            <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-xl font-semibold text-primary">{firstName[0] ?? "?"}</span>
+            </div>
+          )}
           <div className="min-w-0">
             <Link href="/profile" className="text-base font-semibold hover:underline">
-              Vansh A.
+              {shortName}
             </Link>
-            <p className="truncate text-sm text-muted-foreground">Other - Software Devel…</p>
+            <p className="truncate text-sm text-muted-foreground">
+              {profile?.title ?? "Complete your profile"}
+            </p>
           </div>
         </div>
 
@@ -125,7 +144,6 @@ export function FindWorkRail() {
         </Link>
       </CollapsibleCard>
 
-      {/* Preferences */}
       <CollapsibleCard title="Preferences" />
       <CollapsibleCard title="Proposals" />
       <CollapsibleCard title="Project Catalog" />
@@ -134,16 +152,13 @@ export function FindWorkRail() {
       <Card>
         <div className="flex flex-col gap-3 text-sm font-semibold text-primary">
           <Link href="#" className="inline-flex items-center gap-1 hover:underline">
-            Direct Contracts
-            <ExternalLink className="size-3.5" />
+            Direct Contracts <ExternalLink className="size-3.5" />
           </Link>
           <Link href="#" className="inline-flex items-center gap-1 hover:underline">
-            Withdrawals
-            <ExternalLink className="size-3.5" />
+            Withdrawals <ExternalLink className="size-3.5" />
           </Link>
           <Link href="#" className="inline-flex items-center gap-1 hover:underline">
-            Help Center
-            <ExternalLink className="size-3.5" />
+            Help Center <ExternalLink className="size-3.5" />
           </Link>
         </div>
       </Card>

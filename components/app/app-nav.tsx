@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createBrowserClient } from "@supabase/ssr"
 import { ChevronDown, Search, HelpCircle, Bell, Globe, Menu, X } from "lucide-react"
 import { UpworkLogo } from "@/components/upwork-logo"
 import { cn } from "@/lib/utils"
@@ -28,6 +28,23 @@ const reachMoreMenu = [
 ]
 
 export function AppNav() {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [initials, setInitials] = useState("?")
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from("profiles").select("avatar_url, full_name").eq("id", user.id).single()
+      if (data?.avatar_url) setAvatarUrl(data.avatar_url)
+      if (data?.full_name) setInitials(data.full_name[0]?.toUpperCase() ?? "?")
+    }
+    load()
+  }, [])
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
@@ -108,13 +125,14 @@ export function AppNav() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="size-10 overflow-hidden rounded-full ring-2 ring-transparent hover:ring-primary">
-                <Image
-                  src="/avatar-vansh.jpg"
-                  alt="Profile"
-                  width={40}
-                  height={40}
-                  className="size-full object-cover"
-                />
+                {avatarUrl ? <img src={avatarUrl} alt="Profile" className="size-full object-cover" /> : <span className="flex size-full items-center justify-center bg-primary/10 text-sm font-semibold text-primary">{initials}</span>}
+
+
+
+
+
+
+
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
