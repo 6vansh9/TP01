@@ -1,12 +1,12 @@
 "use client"
-
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Plus, Calendar, DollarSign, Briefcase, MessageSquare, Users, CheckCircle } from "lucide-react"
+import { Plus, DollarSign, Briefcase, MessageSquare, Users, CheckCircle, ChevronRight, Clock } from "lucide-react"
 import { toast, Toaster } from "sonner"
 import { Button } from "@/components/ui/button"
 import { AppNav } from "@/components/app/app-nav"
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser"
+import { cn } from "@/lib/utils"
 
 type Job = {
   id: string
@@ -28,6 +28,23 @@ type Contract = {
   conversation_id: string
 }
 
+function formatBudget(job: Job) {
+  if (job.budget_min || job.budget_max) {
+    const min = job.budget_min ? `$${job.budget_min.toLocaleString()}` : ""
+    const max = job.budget_max ? `$${job.budget_max.toLocaleString()}` : ""
+    return min && max ? `${min} – ${max}` : min || max
+  }
+  return "Not specified"
+}
+
+function timeAgo(dateString: string) {
+  const diff = Date.now() - new Date(dateString).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return "today"
+  if (days === 1) return "yesterday"
+  return `${days} days ago`
+}
+
 export default function ClientDashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -38,8 +55,8 @@ export default function ClientDashboardPage() {
     async function loadData() {
       try {
         const supabase = createSupabaseBrowserClient()
-        const { data: { user }, error: userErr } = await supabase.auth.getUser()
-        if (userErr || !user) { toast.error("You need to be signed in."); return }
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
 
         const { data: profile } = await supabase
           .from("profiles").select("full_name").eq("id", user.id).single()
@@ -53,7 +70,6 @@ export default function ClientDashboardPage() {
         if (error) { toast.error(error.message); return }
         setJobs(data || [])
 
-        // Fetch active contracts
         const { data: convs } = await supabase
           .from("conversations")
           .select("id, job_id, freelancer_id")
@@ -83,40 +99,11 @@ export default function ClientDashboardPage() {
     loadData()
   }, [])
 
-  function getStatusBadge(status: string) {
-    const styles: Record<string, string> = {
-      draft: "bg-gray-100 text-gray-700",
-      open: "bg-green-100 text-green-700",
-      closed: "bg-red-100 text-red-700",
-      in_progress: "bg-blue-100 text-blue-700",
-    }
-    const labels: Record<string, string> = {
-      draft: "Draft", open: "Open", closed: "Closed", in_progress: "In Progress"
-    }
-    return (
-      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || styles.open}`}>
-        {labels[status] || status}
-      </span>
-    )
-  }
-
-  function formatBudget(job: Job) {
-    if (job.budget_min || job.budget_max) {
-      const min = job.budget_min ? `$${job.budget_min.toLocaleString()}` : "$0"
-      const max = job.budget_max ? `$${job.budget_max.toLocaleString()}` : ""
-      return max ? `${min} – ${max}` : min
-    }
-    return "Not specified"
-  }
-
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-  }
-
   const totalProposals = jobs.reduce((sum, j) => sum + ((j as any).proposals?.[0]?.count ?? j.proposals_count ?? 0), 0)
+  const openJobs = jobs.filter(j => j.status === "open").length
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f7f7f5]">
       <Toaster position="top-right" richColors />
       <AppNav />
 
@@ -125,28 +112,32 @@ export default function ClientDashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold">
-              {name ? `Welcome back, ${name.split(" ")[0]} 👋` : "Client Dashboard"}
+            <h1 className="text-2xl font-bold text-gray-900">
+              {name ? `Welcome back, ${name.split(" ")[0]}` : "Dashboard"}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">Manage your jobs and contracts</p>
+            <p className="text-gray-500 text-sm mt-1">Manage your jobs and hired talent</p>
           </div>
-          <Button asChild className="rounded-full">
-            <Link href="/post-job"><Plus className="mr-2 size-4" />Post a Job</Link>
+          <Button asChild className="rounded-full bg-[#14a800] hover:bg-[#14a800]/90 text-white gap-2">
+            <Link href="/post-job"><Plus className="size-4" />Post a Job</Link>
           </Button>
         </div>
 
-        {/* Stats */}
+        {/* Stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Jobs Posted", value: jobs.length, icon: Briefcase, color: "text-blue-500" },
-            { label: "Active Contracts", value: contracts.length, icon: CheckCircle, color: "text-green-500" },
-            { label: "Total Proposals", value: totalProposals, icon: Users, color: "text-purple-500" },
-            { label: "Total Spent", value: "$0", icon: DollarSign, color: "text-emerald-500" },
+            { label: "Open Jobs", value: openJobs, icon: Briefcase, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: "Active Contracts", value: contracts.length, icon: CheckCircle, color: "text-green-600", bg: "bg-green-50" },
+            { label: "Total Proposals", value: totalProposals, icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+            { label: "Total Spent", value: "$0", icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-50" },
           ].map(stat => (
-            <div key={stat.label} className="rounded-xl border border-border p-4">
-              <stat.icon className={`size-5 mb-2 ${stat.color}`} />
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
+              <div className={`size-10 rounded-xl ${stat.bg} flex items-center justify-center shrink-0`}>
+                <stat.icon className={`size-5 ${stat.color}`} />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.label}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -154,15 +145,20 @@ export default function ClientDashboardPage() {
         {/* Active Contracts */}
         {contracts.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Active Contracts</h2>
+            <h2 className="text-base font-semibold text-gray-900 mb-3">Active Contracts</h2>
             <div className="space-y-3">
               {contracts.map(c => (
-                <div key={c.id} className="rounded-xl border border-border p-5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold">{c.job_title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">Freelancer: {c.freelancer_name}</p>
+                <div key={c.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-full bg-green-100 flex items-center justify-center font-semibold text-green-700 shrink-0">
+                      {c.freelancer_name[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{c.freelancer_name}</p>
+                      <p className="text-xs text-gray-500">{c.job_title}</p>
+                    </div>
                   </div>
-                  <Button asChild size="sm" className="gap-1.5 shrink-0">
+                  <Button asChild size="sm" variant="outline" className="gap-1.5 rounded-full shrink-0">
                     <Link href="/messages">
                       <MessageSquare className="size-3.5" /> Message
                     </Link>
@@ -175,48 +171,89 @@ export default function ClientDashboardPage() {
 
         {/* Jobs */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Posted Jobs</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-3">My Jobs</h2>
           {loading ? (
-            <div className="py-12 text-center text-muted-foreground">Loading...</div>
+            <div className="py-12 text-center text-gray-400">Loading...</div>
           ) : jobs.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-border p-12 text-center">
-              <Briefcase className="mx-auto size-12 text-muted-foreground/40 mb-4" />
-              <h2 className="text-lg font-semibold">No jobs posted yet</h2>
-              <p className="mt-2 text-muted-foreground text-sm">Post your first job to find talented freelancers.</p>
-              <Button asChild className="mt-6 rounded-full">
+            <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
+              <Briefcase className="mx-auto size-12 text-gray-300 mb-4" />
+              <h2 className="text-lg font-semibold text-gray-700">No jobs posted yet</h2>
+              <p className="mt-2 text-gray-400 text-sm">Post your first job to find talented freelancers.</p>
+              <Button asChild className="mt-6 rounded-full bg-[#14a800] hover:bg-[#14a800]/90 text-white">
                 <Link href="/post-job"><Plus className="mr-2 size-4" />Post your first job</Link>
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              {jobs.map((job) => (
-                <div key={job.id} className="rounded-2xl border border-border bg-card p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-lg font-semibold">{job.title}</h3>
-                        {getStatusBadge(job.status)}
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="size-4" />Posted {formatDate(job.created_at)}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <DollarSign className="size-4" />{formatBudget(job)}
-                        </span>
-                        <span className="capitalize">{job.job_type}</span>
+              {jobs.map((job) => {
+                const proposalCount = (job as any).proposals?.[0]?.count ?? job.proposals_count ?? 0
+                const isInProgress = job.status === "in_progress"
+                const isClosed = job.status === "closed"
+                return (
+                  <div key={job.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    {/* Job header */}
+                    <div className="p-5 pb-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                            <span className={cn(
+                              "text-xs px-2 py-0.5 rounded-full font-medium",
+                              job.status === "open" ? "bg-green-100 text-green-700" :
+                              job.status === "in_progress" ? "bg-blue-100 text-blue-700" :
+                              job.status === "closed" ? "bg-gray-100 text-gray-600" :
+                              "bg-yellow-100 text-yellow-700"
+                            )}>
+                              {job.status === "in_progress" ? "In Progress" : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                            <span className="flex items-center gap-1"><Clock className="size-3" />Posted {timeAgo(job.created_at)}</span>
+                            <span className="flex items-center gap-1"><DollarSign className="size-3" />{formatBudget(job)}</span>
+                            <span className="capitalize">{job.job_type}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-2xl font-bold text-gray-900">{proposalCount}</p>
+                          <p className="text-xs text-gray-400">proposals</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm text-muted-foreground">Proposals</p>
-                      <p className="text-2xl font-bold">{(job as any).proposals?.[0]?.count ?? job.proposals_count}</p>
-                      <Link href={`/dashboard/client/jobs/${job.id}/proposals`} className="text-xs text-primary hover:underline">
-                        View Proposals →
-                      </Link>
-                    </div>
+
+                    {/* Pipeline steps */}
+                    {!isClosed && (
+                      <div className="border-t border-gray-100 grid grid-cols-3 divide-x divide-gray-100">
+                        {[
+                          { label: "View Job Post", href: `/jobs/${job.id}`, active: true },
+                          { label: `Review Proposals (${proposalCount})`, href: `/dashboard/client/jobs/${job.id}/proposals`, active: proposalCount > 0 },
+                          { label: isInProgress ? "✓ Hired" : "Hire", href: `/dashboard/client/jobs/${job.id}/proposals`, active: isInProgress },
+                        ].map((step, i) => (
+                          <Link
+                            key={i}
+                            href={step.href}
+                            className={cn(
+                              "flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors",
+                              step.active
+                                ? "text-[#14a800] hover:bg-green-50"
+                                : "text-gray-300 cursor-default pointer-events-none"
+                            )}
+                          >
+                            {step.label}
+                            {step.active && <ChevronRight className="size-3" />}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    {isClosed && (
+                      <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-between">
+                        <span className="text-xs text-gray-400 flex items-center gap-1.5"><CheckCircle className="size-3.5 text-green-500" />Job completed</span>
+                        <Link href={`/dashboard/client/jobs/${job.id}/proposals`} className="text-xs text-[#14a800] hover:underline">View details →</Link>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

@@ -39,6 +39,9 @@ export default function JobDetailPage() {
   const [coverLetter, setCoverLetter] = useState("")
   const [bidAmount, setBidAmount] = useState("")
   const [showApplyForm, setShowApplyForm] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
+  const [jobOwnerId, setJobOwnerId] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchJob() {
@@ -46,12 +49,20 @@ export default function JobDetailPage() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+        const { data: profile } = await supabase
+          .from("profiles").select("role").eq("id", user.id).single()
+        setCurrentUserRole(profile?.role ?? null)
+      }
       const { data } = await supabase
         .from("jobs")
         .select("*")
         .eq("id", id)
         .single()
       setJob(data)
+      setJobOwnerId(data?.client_id ?? null)
       setLoading(false)
     }
     fetchJob()
@@ -185,7 +196,7 @@ export default function JobDetailPage() {
                   <p className="font-semibold text-primary">✓ Proposal Submitted!</p>
                   <p className="text-xs text-muted-foreground mt-1">The client will review your proposal.</p>
                 </div>
-              ) : (
+              ) : currentUserRole === "client" || currentUserId === jobOwnerId ? null : (
                 <Button className="w-full" onClick={() => setShowApplyForm(v => !v)}>
                   {showApplyForm ? "Cancel Application" : "Apply Now"}
                 </Button>
