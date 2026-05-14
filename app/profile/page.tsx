@@ -31,6 +31,8 @@ function AddButton({ label }: { label: string }) {
 interface Profile {
   id: string
   full_name: string | null
+  edu_verified: boolean | null
+  phone_verified: boolean | null
   avatar_url: string | null
   title: string | null
   bio: string | null
@@ -108,10 +110,22 @@ export default function ProfilePage() {
               <div className="min-w-0 flex-1 pt-2">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">{shortName}</h1>
-                  <Link href="#" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                    <BadgeCheck className="size-4" />
-                    Verify your identity
-                  </Link>
+                  {profile?.edu_verified ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                      🎓 Student Verified
+                    </span>
+                  ) : null}
+                  {profile?.phone_verified ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                      <BadgeCheck className="size-3.5" /> Phone Verified
+                    </span>
+                  ) : null}
+                  {!profile?.edu_verified && !profile?.phone_verified && (
+                    <Link href="#" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                      <BadgeCheck className="size-4" />
+                      Verify your identity
+                    </Link>
+                  )}
                 </div>
                 {profile?.location && (
                   <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
