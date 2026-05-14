@@ -56,7 +56,7 @@ export function JobCard({ job }: { job: Job }) {
       </div>
 
       <h3 className="mt-2 text-pretty text-lg font-semibold leading-snug hover:text-primary md:text-xl">
-        <a href="#">{job.title}</a>
+        <a href={`/jobs/${job.id}`}>{job.title}</a>
       </h3>
 
       <p className="mt-2 text-sm text-muted-foreground">

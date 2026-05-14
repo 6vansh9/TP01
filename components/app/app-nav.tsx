@@ -27,6 +27,7 @@ const reachMoreMenu = [
   { label: "Direct Contracts", href: "/direct-contracts" },
 ]
 
+// notification types added above
 export function AppNav() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [initials, setInitials] = useState("?")
@@ -48,6 +49,20 @@ export function AppNav() {
     load()
   }, [])
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [notifications, setNotifications] = useState<{id:string,title:string,message:string,read:boolean,link:string|null,created_at:string}[]>([])
+  const [showNotifs, setShowNotifs] = useState(false)
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  useEffect(() => {
+    async function loadNotifs() {
+      const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
+      setNotifications(data ?? [])
+    }
+    loadNotifs()
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
@@ -128,13 +143,35 @@ export function AppNav() {
           >
             <HelpCircle className="size-5" />
           </button>
-          <button
-            className="relative inline-flex size-10 items-center justify-center rounded-full hover:bg-muted"
-            aria-label="Notifications"
-          >
-            <Bell className="size-5" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-primary" />
-          </button>
+          <DropdownMenu open={showNotifs} onOpenChange={setShowNotifs}>
+            <DropdownMenuTrigger asChild>
+              <button className="relative inline-flex size-10 items-center justify-center rounded-full hover:bg-muted" aria-label="Notifications">
+                <Bell className="size-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute right-1.5 top-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">{unreadCount}</span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel className="flex items-center justify-between">
+                <span>Notifications</span>
+                {unreadCount > 0 && <span className="text-xs text-muted-foreground">{unreadCount} unread</span>}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notifications.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">No notifications yet</div>
+              ) : (
+                notifications.map(n => (
+                  <DropdownMenuItem key={n.id} asChild>
+                    <a href={n.link ?? "#"} className={cn("flex flex-col gap-1 px-3 py-2.5 cursor-pointer", !n.read && "bg-primary/5")}>
+                      <span className="font-medium text-sm">{n.title}</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed">{n.message}</span>
+                    </a>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             className="hidden size-10 items-center justify-center rounded-full hover:bg-muted md:inline-flex"
             aria-label="Language"

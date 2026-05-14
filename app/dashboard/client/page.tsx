@@ -13,6 +13,7 @@ type Job = {
   title: string
   status: "draft" | "open" | "closed"
   proposals_count: number
+  proposals?: { count: number }[]
   budget_min: number | null
   budget_max: number | null
   job_type: "hourly" | "fixed"
@@ -36,7 +37,7 @@ export default function ClientDashboardPage() {
 
         const { data, error } = await supabase
           .from("jobs")
-          .select("*")
+          .select("*, proposals(count)")
           .eq("client_id", user.id)
           .order("created_at", { ascending: false })
 
@@ -150,7 +151,8 @@ export default function ClientDashboardPage() {
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Proposals</p>
-                      <p className="text-lg font-semibold">{job.proposals_count}</p>
+                      <p className="text-lg font-semibold">{(job as any).proposals?.[0]?.count ?? job.proposals_count}</p>
+                      <a href={`/dashboard/client/jobs/${job.id}/proposals`} className="text-xs text-primary hover:underline">View Proposals →</a>
                     </div>
                   </div>
                 </div>
