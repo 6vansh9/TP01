@@ -30,6 +30,7 @@ const reachMoreMenu = [
 export function AppNav() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [initials, setInitials] = useState("?")
+  const [role, setRole] = useState<"client" | "freelancer" | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -39,9 +40,10 @@ export function AppNav() {
       )
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data } = await supabase.from("profiles").select("avatar_url, full_name").eq("id", user.id).single()
+      const { data } = await supabase.from("profiles").select("avatar_url, full_name, role").eq("id", user.id).single()
       if (data?.avatar_url) setAvatarUrl(data.avatar_url)
       if (data?.full_name) setInitials(data.full_name[0]?.toUpperCase() ?? "?")
+      if (data?.role) setRole(data.role as "client" | "freelancer")
     }
     load()
   }, [])
@@ -53,38 +55,56 @@ export function AppNav() {
         <UpworkLogo />
 
         <nav className="hidden flex-1 items-center gap-1 lg:flex">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
-              Find work
-              <ChevronDown className="size-4 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-              {findWorkMenu.map((item) => (
-                <DropdownMenuItem key={item.label} asChild>
-                  <Link href={item.href}>{item.label}</Link>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Reach more clients</DropdownMenuLabel>
-              {reachMoreMenu.map((item) => (
-                <DropdownMenuItem key={item.label} asChild>
-                  <Link href={item.href}>{item.label}</Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {role === "client" ? (
+            <>
+              <Link href="/post-job" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                Post a Job
+              </Link>
+              <Link href="/dashboard/client" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                My Jobs
+              </Link>
+            </>
+          ) : (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                  Find work
+                  <ChevronDown className="size-4 opacity-60" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  {findWorkMenu.map((item) => (
+                    <DropdownMenuItem key={item.label} asChild>
+                      <Link href={item.href}>{item.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Reach more clients</DropdownMenuLabel>
+                  {reachMoreMenu.map((item) => (
+                    <DropdownMenuItem key={item.label} asChild>
+                      <Link href={item.href}>{item.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <button className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
-            Deliver work
-            <ChevronDown className="size-4 opacity-60" />
-          </button>
-          <button className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
-            Manage finances
-            <ChevronDown className="size-4 opacity-60" />
-          </button>
+              <button className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                Deliver work
+                <ChevronDown className="size-4 opacity-60" />
+              </button>
+              <button className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                Manage finances
+                <ChevronDown className="size-4 opacity-60" />
+              </button>
+            </>
+          )}
           <Link href="/messages" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
             Messages
           </Link>
+          {role && (
+            <Link href={role === "client" ? "/dashboard/client" : "/dashboard/freelancer"} className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+              Dashboard
+            </Link>
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -161,15 +181,33 @@ export function AppNav() {
 
       <div className={cn("border-t border-border bg-background lg:hidden", mobileOpen ? "block" : "hidden")}>
         <nav className="mx-auto flex max-w-[1400px] flex-col gap-1 px-4 py-3">
-          <Link href="/find-work" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
-            Find work
-          </Link>
-          <Link href="/proposals" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
-            Proposals and offers
-          </Link>
+          {role === "client" ? (
+            <>
+              <Link href="/post-job" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                Post a Job
+              </Link>
+              <Link href="/dashboard/client" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                My Jobs
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/find-work" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                Find work
+              </Link>
+              <Link href="/proposals" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+                Proposals and offers
+              </Link>
+            </>
+          )}
           <Link href="/messages" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
             Messages
           </Link>
+          {role && (
+            <Link href={role === "client" ? "/dashboard/client" : "/dashboard/freelancer"} className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
+              Dashboard
+            </Link>
+          )}
           <Link href="/profile" className="rounded-md px-3 py-2 text-sm font-medium hover:bg-muted">
             Profile
           </Link>

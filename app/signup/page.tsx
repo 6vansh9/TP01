@@ -21,7 +21,7 @@ export default function SignupRolePage() {
 
         <div className="mt-12 grid w-full gap-6 sm:grid-cols-2">
           <Link
-            href="/signup/freelancer"
+            href="/signup/client"
             className="group flex flex-col items-center justify-between rounded-2xl border-2 border-border bg-background p-6 transition-all hover:border-primary hover:shadow-lg md:p-8"
           >
             <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-gradient-to-br from-surface-mint to-surface-mint/40">

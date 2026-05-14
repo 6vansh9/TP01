@@ -5,10 +5,9 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  console.log('[callback] code present:', !!code)
+  const role = requestUrl.searchParams.get('role') ?? 'freelancer'
 
   if (!code) {
-    console.log('[callback] no code, redirecting to /login')
     return NextResponse.redirect(new URL('/login', requestUrl.origin))
   }
 
@@ -29,25 +28,34 @@ export async function GET(request: Request) {
   )
 
   const { error } = await supabase.auth.exchangeCodeForSession(code)
-  console.log('[callback] exchangeCodeForSession error:', error?.message ?? 'none')
+  if (error) {
+    return NextResponse.redirect(new URL('/login', requestUrl.origin))
+  }
 
   const { data: { user } } = await supabase.auth.getUser()
-  console.log('[callback] user:', user?.id ?? 'null')
-
   if (!user) {
     return NextResponse.redirect(new URL('/login', requestUrl.origin))
   }
 
-  const { data: profile, error: profileErr } = await supabase
+  // Save role to profile
+  await supabase
     .from('profiles')
-    .select('onboarding_completed')
+    .update({ role })
+    .eq('id', user.id)
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('onboarding_completed, role')
     .eq('id', user.id)
     .single()
 
-  console.log('[callback] profile:', profile, 'profileErr:', profileErr?.message)
-
-  const dest = profile?.onboarding_completed ? '/dashboard/freelancer' : '/onboarding'
-  console.log('[callback] redirecting to:', dest)
+  const finalRole = profile?.role ?? role
+  let dest: string
+  if (!profile?.onboarding_completed) {
+    dest = finalRole === 'client' ? '/dashboard/client' : '/onboarding'
+  } else {
+    dest = finalRole === 'client' ? '/dashboard/client' : '/dashboard/freelancer'
+  }
 
   return NextResponse.redirect(new URL(dest, requestUrl.origin))
 }
