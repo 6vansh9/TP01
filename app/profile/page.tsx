@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Pencil, MapPin, Share2, BadgeCheck, Plus, X, Star, Upload } from "lucide-react"
 import { AppNav } from "@/components/app/app-nav"
 import { createBrowserClient } from "@supabase/ssr"
+import { DeleteAccount } from "@/components/app/delete-account"
 
 interface Profile {
   id: string
@@ -241,6 +242,7 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      <DeleteAccount />
       </main>
 
       {editingName && <Modal title="Edit name" onClose={() => setEditingName(false)} onSave={async () => { await saveField({ full_name: draftName }); setEditingName(false) }} saving={saving}>

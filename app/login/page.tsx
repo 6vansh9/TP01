@@ -3,11 +3,11 @@
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { User, Apple } from "lucide-react"
+import { User, Lock, Apple } from "lucide-react"
 import { UpworkLogo } from "@/components/upwork-logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { createBrowserClient } from "@supabase/ssr"
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser"
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
@@ -20,38 +20,53 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createSupabaseBrowserClient()
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+
+    if (error) {
+      setError("Invalid email or password.")
+      setSubmitting(false)
+      return
+    }
+
+    const role = data.user?.user_metadata?.role
+    if (role === "client") {
+      router.push("/dashboard/client")
+    } else {
+      router.push("/dashboard/freelancer")
+    }
+  }
 
   async function handleGoogleLogin() {
     try {
       setGoogleLoading(true)
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
-      console.log("OAuth data:", data)
-      if (error) {
-        alert("Google login error: " + error.message)
-      }
+      if (error) setError("Google login error: " + error.message)
     } catch (err) {
-      alert("Unexpected error: " + err)
+      setError("Unexpected error: " + err)
     } finally {
       setGoogleLoading(false)
     }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
-    setTimeout(() => router.push("/find-work"), 500)
   }
 
   return (
@@ -73,16 +88,31 @@ export default function LoginPage() {
               <User className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 required
-                placeholder="Username or Email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="h-14 rounded-md pl-12 text-base"
               />
             </div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                required
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-14 rounded-md pl-12 text-base"
+              />
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <Button
               type="submit"
               disabled={submitting}
               className="h-14 w-full rounded-md bg-primary text-base font-medium"
             >
-              {submitting ? "Loading..." : "Continue"}
+              {submitting ? "Logging in..." : "Continue"}
             </Button>
           </form>
 

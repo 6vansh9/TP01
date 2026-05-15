@@ -72,6 +72,19 @@ export default function FreelancerSignupPage() {
 
     setSubmitting(true)
     try {
+      // Block re-signup if email already has an account
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const { exists } = await checkRes.json()
+      if (exists) {
+        setErrorMsg("An account with this email already exists. Please log in, or delete your existing account to start fresh.")
+        setSubmitting(false)
+        return
+      }
+
       let supabase
       try {
         supabase = createSupabaseBrowserClient()
